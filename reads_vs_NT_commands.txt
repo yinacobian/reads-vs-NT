@@ -1,0 +1,41 @@
+###1. Find software and databases
+
+##Find the path to blast
+/home/ana/bin/ncbi-blast-2.12.0+/bin/blastn
+
+##Old version of blast won't work with the nt database in the server, you may need to download blast+ to your hom folder
+## To download blast+ do: 
+## wget https://ftp.ncbi.nlm.nih.gov/blast/executables/blast+/LATEST/ncbi-blast-2.12.0+-x64-linux.tar.gz
+## tar -xvf ncbi-blast-2.12.0+-x64-linux.tar.gz
+
+##Find NT database
+/home/common/blastdbs/nt/nt
+
+##Find taxdb database
+/home/common/blastdbs/taxdb
+
+##Export taxdb 
+export BLASTDB=/home/common/blastdbs/taxdb
+
+##Get blast_besthit.pl 
+git clone https://github.com/yinacobian/simplemg.git
+
+##Split the reads into files of 1 million each, to run in parallel:
+
+###2. Run blastn 
+
+##Run blastn 
+#/home/ana/bin/ncbi-blast-2.12.0+/bin/blastn -db /home/common/blastdbs/nt/nt -query /home/ana/IBD-CCFA/2021-05-DNAvirome/P06_spades_by_subject/contigs/s001_contigs.fasta -num_threads 20 -out /home/ana/test-blastn.blastn -evalue 0.01 -max_target_seqs 10 -outfmt "6 qseqid sseqid pident length mismatchgapopen qstart qend sstart send evalue bitscore sskingdoms sscinames"
+#/home/ana/IBD-CCFA/2021-05-DNAvirome/P11_contigs_vs_NT
+/home/ana/bin/ncbi-blast-2.12.0+/bin/blastn -db /home/common/blastdbs/nt/nt -query allsubjects_contigs.fasta -num_threads 20 -out allsubjects_contigs_vs_NT.blastn -evalue 0.01 -max_target_seqs 10 -outfmt "6 qseqid sseqid pident length mismatchgapopen qstart qend sstart send evalue bitscore sskingdoms sscinames"
+
+###3. Select best blasthit
+##Get perl script to parse best hit:
+##git clone https://github.com/yinacobian/simplemg.git
+perl /home/ana/bin/simplemg/besthitblast.pl allsubjects_contigs_vs_NT.blastn > besthit_allsubjects_contigs_vs_NT.blastn
+
+###4. Get hits tables per kingdom 
+grep 'Viruses'  besthit_allsubjects_contigs_vs_NT.blastn | cut -f 12 | sort -nr | uniq -c | sort -nr | sed -e 's/^ *//' | tr " " "\t" > count_viral_hits.tab
+grep 'Eukaryota'  besthit_allsubjects_contigs_vs_NT.blastn | cut -f 12 | sort -nr | uniq -c | sort -nr | sed -e 's/^ *//' | tr " " "\t" > count_eukaryota_hits.tab
+grep 'Bacteria'  besthit_allsubjects_contigs_vs_NT.blastn | cut -f 12 | sort -nr | uniq -c | sort -nr | sed -e 's/^ *//' | tr " " "\t" > count_bacteria_hits.tab
+
